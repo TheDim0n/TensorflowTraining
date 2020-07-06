@@ -127,3 +127,7 @@ dmypy.json
 
 #VSCode
 .vscode
+
+#PyPI
+.pypirc
+setup.py

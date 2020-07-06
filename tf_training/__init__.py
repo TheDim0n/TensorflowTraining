@@ -1,11 +1,11 @@
-import tf_training.layers
-import tensorflow.keras.models as models
+from tensorflow.keras import models
 from tensorflow import GradientTape
-from tensorflow.keras.losses import Loss
-from tensorflow.keras.optimizers import Optimizer, Adam
+from tensorflow.keras import losses
+from tensorflow.keras import optimizers
+from tensorflow.keras import metrics
 
 
-def train(train_dataset, model, epochs, loss: Loss, optimizer=Adam, metrics=None):
+def train(train_dataset, model, epochs, loss: losses.Loss, optimizer=optimizers.Adam, metrics=[metrics.Recall, metrics.Precision]):
     
     def calculate_loss(x, y, training=True):
         y_pred = model(x, training=training)
@@ -18,13 +18,21 @@ def train(train_dataset, model, epochs, loss: Loss, optimizer=Adam, metrics=None
 
 
     for epoch in range(epochs + 1):
-        epoch_loss = loss
 
         for x, y in train_dataset:
             loss_value, grads = grad(x, y)
             optimizer.apply_gradients(zip(grads, model.trainable_variables))
 
-            
-
+            #update metrics values
             for metric in metrics:
-                metric.update_state(loss_value)
+                metric.update_state(y, model(x, training=True))
+
+        if epoch % 100 == 0:
+            print("Epoch {:03d} -- Loss({}): {:.3f}".format(epoch, loss.__name__, loss_value), end='')
+            for metric in metrics:
+                print(', {}: {}'.format(metric.__name__, metric.result()), end='')
+            print()
+
+            
+if __name__ == "__main__":
+    pass

@@ -1,2 +1,2 @@
 # TensorflowTraining
-additional package for Tensorflow
+Additional package for Tensorflow
