@@ -30,7 +30,7 @@ def train(train_dataset, model, epochs, loss: losses.Loss, optimizer=optimizers.
         return loss(y_true=y, y_pred=y_pred)
 
     def __grad(x, y):
-        with GradientTape as tape:
+        with GradientTape() as tape:
             loss_value = __calculate_loss(x, y)
         return loss_value, tape.gradient(loss_value, model.trainable_variables)
 
