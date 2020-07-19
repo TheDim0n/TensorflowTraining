@@ -12,7 +12,6 @@ def train(train_dataset, model, epochs, loss, optimizer=optimizers.Adam(), metri
     """
     Train keras model.
 
-
     Args:
     
         train_dataset: Tensorflow Dataset object for train the model.
