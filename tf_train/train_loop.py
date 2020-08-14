@@ -1,14 +1,35 @@
 from tensorflow import GradientTape
-from tensorflow.keras import optimizers
-from tensorflow.keras import metrics
+from tensorflow.keras import metrics, optimizers
+import time
 
+from . import api
 from .utils import predict_classes
 
 
-__all__ = ['train']
+__all__ = ['train', 'evaluate']
+
+def evaluate(dataset, model, loss, metrics=[metrics.Recall(), metrics.Precision()]):
+    """
+    Evaluate keras model.
+
+    Args:
+    
+        dataset: Tensorflow Dataset object for evaluate the model.
+
+        model: Keras model.
+
+        loss: Loss function.
+
+        metrics: List of tensorflow mertics. Default contains Recall and Precision.
+    """
+
+    _data = api.evaluate(dataset=dataset, model=model, loss=loss, metrics=metrics)
+    for name, val in _data.items():
+        print('{}: {:.6f}'.format(name, val), end=', ')
+    print()
 
 
-def train(train_dataset, model, epochs, loss, optimizer=optimizers.Adam(), metrics=[metrics.Recall(), metrics.Precision()]):
+def train(train_dataset, model, epochs, loss, optimizer=optimizers.Adam(), metrics=[metrics.Recall(), metrics.Precision()], frequency=10, validation_dataset=None):
     """
     Train keras model.
 
@@ -25,25 +46,25 @@ def train(train_dataset, model, epochs, loss, optimizer=optimizers.Adam(), metri
         optimizer: Tensorflow optimizer. Default Adam with learning_rate=0.001.
 
         metrics: List of tensorflow mertics. Default contains Recall and Precision.
+
+        frequency: Output training data every frequency epoch. Default 10.
+
+        validation_dataset: Tensorflow Dataset object for validate the model.
     """
 
-    def __get_name(obj):
-        return str(obj).split()[0].split('.')[4]
+    model.compile(optimizer=optimizer, loss=loss)
 
-    def __calculate_loss(model, x, y, training=True):
-        y_pred = model(x, training=training)
-        return loss(y_true=y, y_pred=y_pred)
+    for metric in metrics:
+        metric.reset_states()
 
-    def __grad(model, x, y):
-        with GradientTape() as tape:
-            loss_value = __calculate_loss(model, x, y)
-        return loss_value, tape.gradient(loss_value, model.trainable_variables)
-
+    __start_train_time = time.time()
+    __start_epoch_time = __start_train_time
 
     for epoch in range(epochs + 1):
 
         for x, y in train_dataset:
-            loss_value, grads = __grad(model, x, y)
+            grad = api.__grad(model, x, y, loss=loss)
+            loss_value, grads = grad['loss_value'], grad['grad_tape']
             optimizer.apply_gradients(zip(grads, model.trainable_variables))
 
             #update metrics values
@@ -51,11 +72,20 @@ def train(train_dataset, model, epochs, loss, optimizer=optimizers.Adam(), metri
                 y_pred = predict_classes(model, x, training=True)
                 metric.update_state(y_true=y, y_pred=y_pred)
 
-        if epoch % 10 == 0:
-            print("Epoch {:03d} -- Loss({}): {:.3f}".format(epoch, __get_name(loss), loss_value), end='')
+        if epoch % frequency == 0:
+            print("Epoch {} -- loss_value: {:.6f}".format(epoch, loss_value), end='')
             for metric in metrics:
-                print(', {}: {}'.format(__get_name(metric), metric.result()), end='')
-            print()
+                print(', {}: {:.6f}'.format(api.__get_name(metric)['name'], metric.result()), end='')
+            print(', time - {:.3f}s'.format(time.time() - __start_epoch_time))
+
+            if validation_dataset:
+                a = '_' * (len(str(epoch)) + 10)
+                print(a, end='')
+                evaluate(validation_dataset, model, loss, metrics=metrics)
+
+            __start_epoch_time = time.time()
+
+    print('Model training takes {:.3f} seconds.'.format(time.time() - __start_train_time))
 
             
 if __name__ == "__main__":
