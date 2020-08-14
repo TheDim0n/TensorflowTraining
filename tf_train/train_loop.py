@@ -9,9 +9,23 @@ from .utils import predict_classes
 __all__ = ['train', 'evaluate']
 
 def evaluate(dataset, model, loss, metrics=[metrics.Recall(), metrics.Precision()]):
+    """
+    Evaluate keras model.
+
+    Args:
+    
+        dataset: Tensorflow Dataset object for evaluate the model.
+
+        model: Keras model.
+
+        loss: Loss function.
+
+        metrics: List of tensorflow mertics. Default contains Recall and Precision.
+    """
+
     _data = api.evaluate(dataset=dataset, model=model, loss=loss, metrics=metrics)
     for name, val in _data.items():
-        print('{}: {:.6f}'.format(name, val), end='')
+        print('{}: {:.6f}'.format(name, val), end=', ')
     print()
 
 
@@ -32,6 +46,10 @@ def train(train_dataset, model, epochs, loss, optimizer=optimizers.Adam(), metri
         optimizer: Tensorflow optimizer. Default Adam with learning_rate=0.001.
 
         metrics: List of tensorflow mertics. Default contains Recall and Precision.
+
+        frequency: Output training data every frequency epoch. Default 10.
+
+        validation_dataset: Tensorflow Dataset object for validate the model.
     """
 
     model.compile(optimizer=optimizer, loss=loss)
@@ -55,15 +73,15 @@ def train(train_dataset, model, epochs, loss, optimizer=optimizers.Adam(), metri
                 metric.update_state(y_true=y, y_pred=y_pred)
 
         if epoch % frequency == 0:
-            print("Epoch {} -- Loss({}): {:.6f}".format(epoch, api.__get_name(loss)['name'], loss_value), end='')
+            print("Epoch {} -- loss_value: {:.6f}".format(epoch, loss_value), end='')
             for metric in metrics:
                 print(', {}: {:.6f}'.format(api.__get_name(metric)['name'], metric.result()), end='')
             print(', time - {:.3f}s'.format(time.time() - __start_epoch_time))
 
             if validation_dataset:
-                a = '_' * (len(str(epoch)) + 9)
+                a = '_' * (len(str(epoch)) + 10)
                 print(a, end='')
-                evaluate(validation_dataset, model, loss, metrics=metric)
+                evaluate(validation_dataset, model, loss, metrics=metrics)
 
             __start_epoch_time = time.time()
 

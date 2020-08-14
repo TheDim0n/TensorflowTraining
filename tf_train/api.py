@@ -27,8 +27,25 @@ def __grad(model, x, y, loss):
         }
 
 def evaluate(dataset, model, loss, metrics=[metrics.Recall(), metrics.Precision()]):
+    """
+    Evaluate keras model.
+
+    Args:
+    
+        dataset: Tensorflow Dataset object for evaluate the model.
+
+        model: Keras model.
+
+        loss: Loss function.
+
+        metrics: List of tensorflow mertics. Default contains Recall and Precision.
+
+    Returns:
+        Dict with keys 'loss_value', 'metric_name_1', 'metric_name_2' and etc. 
+    """
+
     for x, y in dataset:
-        loss_value = __calculate_loss(model, x, y, loss=loss, training=False)['loss_value']
+        loss_value = __calculate_loss(model, x, y, loss=loss, training=False)['loss']
         for metric in metrics:
             y_pred = predict_classes(model, x, training=False)
             metric.update_state(y_true=y, y_pred=y_pred)
